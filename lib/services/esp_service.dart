@@ -86,26 +86,31 @@ class EspService extends ChangeNotifier {
   /// On Windows: returns COM ports
   /// On Linux: returns /dev/ttyUSB* and /dev/ttyACM* ports
   List<String> get availablePorts {
-    final allPorts = SerialPort.availablePorts;
-    
-    if (Platform.isMacOS) {
-      // On macOS, prefer cu.* ports over tty.* for outgoing connections
-      // Filter out Bluetooth ports
-      return allPorts.where((port) =>
-        port.startsWith('/dev/cu.') && 
-        !port.contains('Bluetooth') &&
-        !port.contains('debug')
-      ).toList();
-    } else if (Platform.isLinux) {
-      // On Linux, filter for USB serial ports
-      return allPorts.where((port) =>
-        port.startsWith('/dev/ttyUSB') || 
-        port.startsWith('/dev/ttyACM')
-      ).toList();
+    try {
+      final allPorts = SerialPort.availablePorts;
+      
+      if (Platform.isMacOS) {
+        // On macOS, prefer cu.* ports over tty.* for outgoing connections
+        // Filter out Bluetooth ports
+        return allPorts.where((port) =>
+          port.startsWith('/dev/cu.') && 
+          !port.contains('Bluetooth') &&
+          !port.contains('debug')
+        ).toList();
+      } else if (Platform.isLinux) {
+        // On Linux, filter for USB serial ports
+        return allPorts.where((port) =>
+          port.startsWith('/dev/ttyUSB') || 
+          port.startsWith('/dev/ttyACM')
+        ).toList();
+      }
+      
+      // Windows: return all ports (COM*)
+      return allPorts;
+    } catch (e) {
+      debugPrint('[ESP] Error getting available ports: $e');
+      return [];
     }
-    
-    // Windows: return all ports (COM*)
-    return allPorts;
   }
 
   /// Get port description
