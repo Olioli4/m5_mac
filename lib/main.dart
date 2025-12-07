@@ -249,7 +249,7 @@ class StatusBar extends StatelessWidget {
 
         return Container(
           height: 28,
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: Theme.of(context).colorScheme.surfaceVariant,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
