@@ -1,0 +1,52 @@
+name: Build macOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS app
+        run: flutter build macos --release
+
+      - name: Create DMG
+        run: |
+          cd build/macos/Build/Products/Release
+          # Create a folder for DMG contents
+          mkdir -p dmg_contents
+          cp -R "m5_mac.app" dmg_contents/
+          # Create DMG
+          hdiutil create -volname "M5 MAC" -srcfolder dmg_contents -ov -format UDZO m5_mac.dmg
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: m5_mac-macos
+          path: build/macos/Build/Products/Release/m5_mac.dmg
+          retention-days: 30
+
+      - name: Upload app bundle (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: m5_mac-macos-app
+          path: build/macos/Build/Products/Release/m5_mac.app
+          retention-days: 30
