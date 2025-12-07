@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import '../models.dart';
@@ -80,8 +81,32 @@ class EspService extends ChangeNotifier {
   final _downloadController = StreamController<String>.broadcast();
   Stream<String> get downloadStream => _downloadController.stream;
 
-  /// Get available serial ports
-  List<String> get availablePorts => SerialPort.availablePorts;
+  /// Get available serial ports (platform-aware)
+  /// On macOS: filters for /dev/cu.* ports (outgoing connections)
+  /// On Windows: returns COM ports
+  /// On Linux: returns /dev/ttyUSB* and /dev/ttyACM* ports
+  List<String> get availablePorts {
+    final allPorts = SerialPort.availablePorts;
+    
+    if (Platform.isMacOS) {
+      // On macOS, prefer cu.* ports over tty.* for outgoing connections
+      // Filter out Bluetooth ports
+      return allPorts.where((port) =>
+        port.startsWith('/dev/cu.') && 
+        !port.contains('Bluetooth') &&
+        !port.contains('debug')
+      ).toList();
+    } else if (Platform.isLinux) {
+      // On Linux, filter for USB serial ports
+      return allPorts.where((port) =>
+        port.startsWith('/dev/ttyUSB') || 
+        port.startsWith('/dev/ttyACM')
+      ).toList();
+    }
+    
+    // Windows: return all ports (COM*)
+    return allPorts;
+  }
 
   /// Get port description
   String getPortDescription(String portName) {
@@ -106,8 +131,10 @@ class EspService extends ChangeNotifier {
 
     // Open port first
     if (!_port!.openReadWrite()) {
-      _setStatus('Fehler beim Öffnen von $portName');
-      _errorController.add('Fehler beim Öffnen von $portName');
+      final lastError = SerialPort.lastError;
+      _setStatus('Fehler beim Öffnen von $portName: $lastError');
+      _errorController.add('Fehler beim Öffnen von $portName: $lastError');
+      debugPrint('[ESP] Failed to open port: $lastError');
       return false;
     }
 
@@ -118,8 +145,18 @@ class EspService extends ChangeNotifier {
       config.bits = 8;
       config.parity = SerialPortParity.none;
       config.stopBits = 1;
-      config.dtr = SerialPortDtr.on;
-      config.rts = SerialPortRts.off;
+      
+      // DTR/RTS handling differs by platform
+      if (Platform.isMacOS || Platform.isLinux) {
+        // On Unix systems, don't toggle DTR to avoid resetting the device
+        config.dtr = SerialPortDtr.off;
+        config.rts = SerialPortRts.off;
+      } else {
+        // On Windows, use DTR to signal connection
+        config.dtr = SerialPortDtr.on;
+        config.rts = SerialPortRts.off;
+      }
+      
       _port!.config = config;
     } catch (e) {
       debugPrint('[ESP] Failed to set config: $e');
