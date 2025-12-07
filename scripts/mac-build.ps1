@@ -29,7 +29,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Step 2: Run flutter pub get
 Write-Host "`n[2/4] Installing dependencies..." -ForegroundColor Yellow
-ssh $MAC_HOST "cd $REMOTE_DIR && $FLUTTER pub get"
+ssh $MAC_HOST "export PATH=/usr/local/bin:`$PATH && cd $REMOTE_DIR && $FLUTTER pub get"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error: Failed to get dependencies" -ForegroundColor Red
@@ -38,7 +38,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Step 3: Build macOS app
 Write-Host "`n[3/4] Building macOS app..." -ForegroundColor Yellow
-ssh $MAC_HOST "cd $REMOTE_DIR && $FLUTTER build macos --release"
+ssh $MAC_HOST "export PATH=/usr/local/bin:`$PATH && cd $REMOTE_DIR && $FLUTTER build macos --release"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error: Build failed" -ForegroundColor Red
