@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build macOS (Remote)",
+            "type": "shell",
+            "command": "powershell",
+            "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/mac-build.ps1"],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build Windows",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["build", "windows", "--release"],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Windows",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run", "-d", "windows"],
+            "group": "test",
+            "problemMatcher": []
+        }
+    ]
+}
