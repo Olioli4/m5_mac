@@ -20,14 +20,7 @@ git push 2>&1 | Out-Null
 Pop-Location
 
 # Clone or pull on Mac
-ssh $MAC_HOST @"
-if [ -d $REMOTE_DIR/.git ]; then
-    cd $REMOTE_DIR && git pull
-else
-    mkdir -p ~/Code
-    cd ~/Code && git clone https://github.com/Olioli4/m5_mac.git
-fi
-"@
+ssh $MAC_HOST "if [ -d ~/Code/m5_mac/.git ]; then cd ~/Code/m5_mac && git pull; else mkdir -p ~/Code && cd ~/Code && git clone https://github.com/Olioli4/m5_mac.git; fi"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error: Failed to sync files" -ForegroundColor Red
@@ -54,20 +47,16 @@ if ($LASTEXITCODE -ne 0) {
 
 # Step 4: Copy DMG back (optional - create DMG first)
 Write-Host "`n[4/4] Creating DMG and downloading..." -ForegroundColor Yellow
-ssh $MAC_HOST @"
-cd $REMOTE_DIR/build/macos/Build/Products/Release
-rm -rf dmg_contents m5_mac.dmg 2>/dev/null
-mkdir -p dmg_contents
-cp -R m5_mac.app dmg_contents/
-hdiutil create -volname 'M5 MAC' -srcfolder dmg_contents -ov -format UDZO m5_mac.dmg
-"@
+# Step 4: Copy DMG back (optional - create DMG first)
+Write-Host "`n[4/4] Creating DMG and downloading..." -ForegroundColor Yellow
+ssh $MAC_HOST "cd ~/Code/m5_mac/build/macos/Build/Products/Release && rm -rf dmg_contents m5_mac.dmg 2>/dev/null && mkdir -p dmg_contents && cp -R m5_mac.app dmg_contents/ && hdiutil create -volname 'M5 MAC' -srcfolder dmg_contents -ov -format UDZO m5_mac.dmg"
 
 # Create local output directory
 $outputDir = "$LOCAL_DIR\build\macos-remote"
 New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
 # Download DMG
-scp "${MAC_HOST}:${REMOTE_DIR}/build/macos/Build/Products/Release/m5_mac.dmg" "$outputDir\"
+scp "mac-build:~/Code/m5_mac/build/macos/Build/Products/Release/m5_mac.dmg" "$outputDir\"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n=== Build Complete! ===" -ForegroundColor Green
@@ -75,5 +64,5 @@ if ($LASTEXITCODE -eq 0) {
     explorer $outputDir
 } else {
     Write-Host "`nBuild complete on Mac. DMG download failed." -ForegroundColor Yellow
-    Write-Host "You can manually copy from: ${MAC_HOST}:${REMOTE_DIR}/build/macos/Build/Products/Release/m5_mac.dmg"
+    Write-Host "You can manually copy from: mac-build:~/Code/m5_mac/build/macos/Build/Products/Release/m5_mac.dmg"
 }
